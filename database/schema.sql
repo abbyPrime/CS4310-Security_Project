@@ -10,8 +10,15 @@ CREATE TABLE users (
     username        VARCHAR(50) NOT NULL UNIQUE,
     password_hash   VARCHAR(255) NOT NULL,
     salt            VARCHAR(255) NOT NULL,
-    production_id   INT,
-    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User to production mapping (many-to-many)
+CREATE TABLE user_productions (
+    user_id         INT NOT NULL,
+    production_id   INT NOT NULL,
+    PRIMARY KEY (user_id, production_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (production_id) REFERENCES productions(production_id)
 );
 
