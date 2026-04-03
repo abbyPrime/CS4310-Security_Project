@@ -4,6 +4,7 @@
         <meta charset="UTF-8">
         <title>CinemaShare Login</title>
         <link rel="stylesheet" href="login.css">
+        <script src="config.js"></script>
     </head>
 
     <body>
@@ -31,8 +32,9 @@
                 const password = document.getElementById('password').value;
 
                 try {
-                    // Call the backend API
-                    const response = await fetch('http://localhost:8000/api/login', {
+                    // Call the backend API (automatically uses local or production URL)
+                    const apiUrl = window.API_CONFIG.API_URL;
+                    const response = await fetch(`${apiUrl}/api/login`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
