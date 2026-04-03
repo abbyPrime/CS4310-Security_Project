@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>CinemaShare Dashboard</title>
+        <link rel="stylesheet" href="dashboard.css">
+    </head>
+    <body>
+        <div class="container">
+            <h1>CinemaShare Dashboard</h1>
+            <p>Welcome to your CinemaShare dashboard!</p>
+        </div>
+
+        <div>
+            <profile>
+                <h2>User Profile</h2>
+                <p>Name: John Doe</p>
+                <p>Email: john.doe@example.com</p>
+            </profile>
+        </div>
+
+        <script>
+            const logoutButton = document.createElement('button');
+            logoutButton.textContent = 'Logout';
+            document.querySelector('.container').appendChild(logoutButton);
+            logoutButton.addEventListener('click', function() {
+                window.location.href = 'index.html'; // Log out and redirect back to the login page
+            })
+        </script>
+    </body>
+</html>
