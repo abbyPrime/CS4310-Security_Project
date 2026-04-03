@@ -6,26 +6,43 @@
         <link rel="stylesheet" href="dashboard.css">
     </head>
     <body>
-        <div class="container">
-            <h1>CinemaShare Dashboard</h1>
-            <p>Welcome to your CinemaShare dashboard!</p>
-        </div>
+        <header class="navbar">
+            <h1 class="logo">CinemaShare</h1>
+            
+            <div class="profile-menu">
+                <button class="profile-button">
+                    <img src="profile-icon.png" alt="Profile Icon" class="profile-icon">
+                </button>
+            
 
-        <div>
-            <profile>
-                <h2>User Profile</h2>
-                <p>Name: John Doe</p>
-                <p>Email: john.doe@example.com</p>
-            </profile>
-        </div>
+                <div class="dropdown">
+                    <a href="index.html">Logout</a>
+                </div>
+            </div>
+        </header>
 
+            <div class="container">
+                <h2>Dashboard</h2>
+                <p>Welcome to your CinemaShare dashboard!</p>
+            </div>
+        
         <script>
-            const logoutButton = document.createElement('button');
-            logoutButton.textContent = 'Logout';
-            document.querySelector('.container').appendChild(logoutButton);
-            logoutButton.addEventListener('click', function() {
-                window.location.href = 'index.html'; // Log out and redirect back to the login page
-            })
+            // Dropdown menu functionality
+            const profileButton = document.querySelector('.profile-button');
+            const dropdown = document.querySelector('.dropdown');
+
+            profileButton.addEventListener('click', () => {
+                dropdown.classList.toggle('show');
+            });
+
+            // Close the dropdown if the user clicks outside of it
+            window.addEventListener('click', (event) => {
+                if (!event.target.matches('.profile-button') && !event.target.matches('.profile-icon')) {
+                    if (dropdown.classList.contains('show')) {
+                        dropdown.classList.remove('show');
+                    }
+                }
+            });
         </script>
     </body>
 </html>
