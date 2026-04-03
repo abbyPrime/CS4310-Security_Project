@@ -1,0 +1,15 @@
+/* Style for the Dashboard Page */
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: rgba(198, 188, 198, 0.518);
+    margin: 0;
+}
+
+h1 {
+    text-align: left;
+    padding : 20px;
+    background: black;
+    color: rgba(219, 208, 45, 0.916);
+    font-size: 36px;
+}

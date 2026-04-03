@@ -2,22 +2,22 @@
 
 body {
     font-family: Arial, sans-serif;
-    background: blue;
+    background: rgba(198, 188, 198, 0.518);
     margin: 0;
 }
 
 .container {
-    max-width: 400px;
-    margin: 50px auto;
-    padding: 20px;
+    max-width: 320px;
+    margin: 100px auto;
+    padding: 25px;
     background: white;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
     text-align: center;
-    color: #333;
+    color: rgb(20, 17, 17);
 }
 
 .form-group {
@@ -27,7 +27,7 @@ h1 {
 label {
     display: block;
     margin-bottom: 5px;
-    color: #333;
+    color: #ccc;
 }
 
 input[type="text"],
@@ -38,16 +38,16 @@ input[type="password"] {
     border-radius: 5px;
 }
 
-.btn {
+.button {
     width: 100%;
     padding: 10px;
-    background-color: #007bff;
+    background-color: #4158a8;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
 }
 
-.btn:hover {
-    background-color: #0056b3;
+.button:hover {
+    background-color: #000000;
 }
