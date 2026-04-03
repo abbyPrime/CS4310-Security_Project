@@ -27,6 +27,13 @@
             </div>
         
         <script>
+            // Check if user is authenticated
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                // Redirect to login if no token found
+                window.location.href = 'index.html';
+            }
+
             // Dropdown menu functionality
             const profileButton = document.querySelector('.profile-button');
             const dropdown = document.querySelector('.dropdown');
@@ -42,6 +49,16 @@
                         dropdown.classList.remove('show');
                     }
                 }
+            });
+
+            // Handle logout
+            const logoutLink = document.querySelector('.dropdown a[href="index.html"]');
+            logoutLink.addEventListener('click', (event) => {
+                event.preventDefault();
+                // Clear the token
+                localStorage.removeItem('access_token');
+                // Redirect to login
+                window.location.href = 'index.html';
             });
         </script>
     </body>

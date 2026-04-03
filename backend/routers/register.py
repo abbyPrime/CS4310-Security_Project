@@ -17,14 +17,14 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken"
         )
 
-    # Hash password server-side
-    hashed_password = hash_password(request.password)
+    # Hash password server-side with salt
+    hashed_password, salt = hash_password(request.password)
 
     # Create new user
     new_user = User(
         username=request.username,
         password_hash=hashed_password,
-        salt="bcrypt_internal",  # bcrypt handles salt internally
+        salt=salt,
     )
 
     db.add(new_user)

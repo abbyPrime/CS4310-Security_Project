@@ -24,18 +24,38 @@
             </form>
         </div>
         <script>
-            document.getElementById('loginForm').addEventListener('submit', function(event) {
+            document.getElementById('loginForm').addEventListener('submit', async function(event) {
                 event.preventDefault(); // Prevent the login form from submitting normally
 
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
 
-                // Simple validation (for demonstration purposes)
-                if (username === 'admin' && password === 'password') {
-                    // alert('Login successful!');
-                    window.location.href = 'dashboard.html'; // Redirect to dashboard
-                } else {
-                    alert('Invalid username or password.');
+                try {
+                    // Call the backend API
+                    const response = await fetch('http://localhost:8000/api/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            username: username,
+                            password: password
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        // Store the JWT token
+                        localStorage.setItem('access_token', data.access_token);
+                        // Redirect to dashboard
+                        window.location.href = 'dashboard.html';
+                    } else {
+                        const error = await response.json();
+                        alert(error.detail || 'Invalid username or password.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Failed to connect to server. Please ensure the backend is running.');
                 }
             });
         </script>

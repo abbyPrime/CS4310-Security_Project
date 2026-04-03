@@ -27,3 +27,13 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+
+
+class RegisterResponse(BaseModel):
+    user_id: int
+    username: str
