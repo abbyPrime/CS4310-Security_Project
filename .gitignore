@@ -19,15 +19,8 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
+.claude/
 
 # OS
 .DS_Store
 Thumbs.db
-```
-
-Place this at the **root of the repo** so it covers the whole project. 
-
-One important note — `.env` is in there which means your database credentials and secret key won't get pushed to GitHub. Make sure you tell your teammates to create their own local `.env` file using the variables you defined earlier. A good practice is to also add a `.env.example` file to the repo with the variable names but no actual values, like:
-```
-DATABASE_URL=
-SECRET_KEY=

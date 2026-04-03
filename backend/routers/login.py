@@ -19,7 +19,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
         )
 
     # Verify password
-    if not verify_password(request.password, user.password_hash):
+    if not verify_password(request.password, user.password_hash, user.salt):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
