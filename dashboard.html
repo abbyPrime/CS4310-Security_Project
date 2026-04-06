@@ -25,7 +25,10 @@
                 <h2>Dashboard</h2>
                 <p>Welcome to your CinemaShare dashboard!</p>
             </div>
-        
+            
+            <input type="file" id="fileInput" />
+            <button onclick="uploadFile()">Upload File</button>
+
         <script>
             // Check if user is authenticated
             const token = localStorage.getItem('access_token');
@@ -60,6 +63,37 @@
                 // Redirect to login
                 window.location.href = 'index.html';
             });
+
+            // Handle file download
+           function uploadFile() {
+                const fileInput = document.getElementById('fileInput');
+                const file = fileInput.files[0];
+                if (!file) {
+                    alert('Please select a file to upload.');
+                    return;
+                }
+
+                const url = '${window.API_CONFIG.API_URL}/upload'; // Update with backend endpoint
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('File uploaded successfully!');
+                })
+                .catch(error => {
+                    console.error('Error uploading file:', error);
+                    alert('Failed to upload file.');
+                });
+           }
         </script>
     </body>
 </html>
