@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import login, register
+from routers import login, register, upload
 import os
 
 app = FastAPI(title="CinemaShare API", version="1.0.0")
@@ -33,3 +33,4 @@ async def health_check():
 
 app.include_router(login.router, prefix="/api")
 app.include_router(register.router, prefix="/api")
+app.include_router(upload.router, prefix="/api")
