@@ -1,3 +1,6 @@
+[providers]
+python = "3.11"
+
 [phases.setup]
 nixPkgs = ["python311", "postgresql"]
 
@@ -5,4 +8,4 @@ nixPkgs = ["python311", "postgresql"]
 cmds = ["pip install -r requirements.txt"]
 
 [start]
-cmd = "bash -c 'python init_db.py || true && python create_test_users.py || true && python -m uvicorn main:app --host 0.0.0.0 --port $PORT'"
+cmd = "python init_db.py || true && python create_test_users.py || true && python -m uvicorn main:app --host 0.0.0.0 --port $PORT"
