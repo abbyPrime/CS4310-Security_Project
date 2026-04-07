@@ -64,7 +64,7 @@
                 window.location.href = 'index.html';
             });
 
-            // Handle file download
+            // Handle file upload
            function uploadFile() {
                 const fileInput = document.getElementById('fileInput');
                 const file = fileInput.files[0];
@@ -73,12 +73,12 @@
                     return;
                 }
 
-                const url = '${window.API_CONFIG.API_URL}/upload'; // Update with backend endpoint
+                const url = `${window.API_CONFIG.API_URL}/upload`;
 
                 const formData = new FormData();
                 formData.append('file', file);
 
-                fetch('/upload', {
+                fetch(url, {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -88,6 +88,7 @@
                 .then(response => response.json())
                 .then(data => {
                     alert('File uploaded successfully!');
+                    console.log('Upload response:', data);
                 })
                 .catch(error => {
                     console.error('Error uploading file:', error);
