@@ -31,11 +31,11 @@
 
         <script>
             // Check if user is authenticated
-            //const token = localStorage.getItem('access_token');
-            //if (!token) {
-                // Redirect to login if no token found
-                //window.location.href = 'index.html';
-            //}
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                //Redirect to login if no token found
+                window.location.href = 'index.html';
+            }
 
             // Dropdown menu functionality
             const profileButton = document.querySelector('.profile-button');
