@@ -46,3 +46,17 @@ def hash_password(password: str, salt: str = None) -> tuple[str, str]:
 
     password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
     return password_hash, salt
+
+
+def verify_token(token: str):
+    """
+    Verify and decode a JWT token.
+    Returns the payload if valid, None if invalid.
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.JWTError:
+        return None
