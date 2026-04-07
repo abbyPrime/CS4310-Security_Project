@@ -1,8 +1,19 @@
 # CS4310-Security_Project
-A online communication website that will allow users within the filmmaking industry to share, update, and manage screenplays.
+An online communication platform that allows users within the filmmaking industry to securely share, update, and manage screenplays with encrypted file uploads.
 
 ## Live Demo
-To access the website: click on the following link: https://abbyprime.github.io/CS4310-Security_Project/
+
+### Frontend
+https://abbyprime.github.io/CS4310-Security_Project/
+
+### Backend API
+**Production:** https://web-production-8b8e1f.up.railway.app
+**API Documentation:** https://web-production-8b8e1f.up.railway.app/docs
+
+### Test Credentials
+- Username: `testuser` | Password: `password123`
+- Username: `admin` | Password: `admin123`
+- Username: `demo` | Password: `demo123`
 
 ---
 
@@ -201,6 +212,10 @@ psql -U postgres -d cinemashare -c "SELECT user_id, username, LEFT(password_hash
 - **Token Storage**: JWT stored in localStorage
 - **Generic Error Messages**: Prevents username enumeration
 - **CORS Configuration**: Controlled cross-origin requests
+- **Secure File Uploads**: JWT-required file upload with 50MB size limit
+- **HTTPS/TLS Encryption**: All production traffic encrypted end-to-end
+- **Token Verification**: Server-side JWT validation on all protected endpoints
+- **File Type Security**: Unique filename generation prevents path traversal attacks
 
 ### 6. Troubleshooting
 
@@ -233,7 +248,80 @@ psql -U postgres -d cinemashare -c "SELECT user_id, username, LEFT(password_hash
 - **Permission denied when creating database:** Make sure you're using an Administrator command prompt or use `psql -U postgres`
 - **Virtual environment activation fails:** Use `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` in PowerShell, then try `.venv\Scripts\Activate.ps1`
 
-### 7. Cloud Deployment (Client-Server on Separate Machines with HTTPS)
+### 7. File Upload Feature
+
+The CinemaShare platform includes a secure file upload system for sharing screenplay documents and related files.
+
+#### Using File Upload
+
+1. **Login to Dashboard**
+   - Navigate to `http://localhost:3000/dashboard.html` (local) or the production dashboard
+   - Must be authenticated with valid JWT token
+
+2. **Upload a File**
+   - Click "Choose File" button
+   - Select a file from your computer (max 50MB)
+   - Click "Upload File"
+   - Wait for success confirmation
+
+3. **View Uploaded Files**
+   - Click "View Uploaded Files" button
+   - See list of all uploaded files with:
+     - Filename
+     - File size (in KB)
+     - Upload date/time
+
+#### Technical Details
+
+**Security Features:**
+- ✅ JWT authentication required for all file operations
+- ✅ 50MB file size limit to prevent abuse
+- ✅ Unique UUID-based filename generation prevents overwrites
+- ✅ Files stored in isolated `uploads/` directory
+- ✅ User attribution tracking (who uploaded what)
+
+**File Storage:**
+- **Local Development:** Files stored in `backend/uploads/`
+- **Production (Railway):** Files stored in `/app/uploads/`
+  - ⚠️ **Note:** Railway uses ephemeral storage - files are deleted on redeployment
+  - For persistent storage, consider adding Railway Volumes or cloud storage (S3)
+
+**API Endpoints:**
+```bash
+# Upload a file
+curl -X POST https://web-production-8b8e1f.up.railway.app/api/upload \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -F "file=@screenplay.pdf"
+
+# List uploaded files
+curl -X GET https://web-production-8b8e1f.up.railway.app/api/uploads \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response Example:**
+```json
+{
+  "success": true,
+  "message": "File uploaded successfully",
+  "file_info": {
+    "original_filename": "screenplay.pdf",
+    "stored_filename": "a1b2c3d4-e5f6-7890-abcd-ef1234567890.pdf",
+    "file_size": 1048576,
+    "content_type": "application/pdf",
+    "uploaded_by": "testuser",
+    "uploaded_at": "2026-04-06T20:30:00"
+  }
+}
+```
+
+#### Future Enhancements
+- [ ] Database tracking of file metadata
+- [ ] Persistent storage via Railway Volumes or AWS S3
+- [ ] File preview and download functionality
+- [ ] File sharing between production team members
+- [ ] File version control and revision history
+
+### 8. Cloud Deployment (Client-Server on Separate Machines with HTTPS)
 
 This section explains how to deploy the backend to a cloud service with HTTPS encryption, meeting the security requirement of having client and server on separate machines with secure data transfer.
 
@@ -271,36 +359,60 @@ git push origin main
    - Set the `DATABASE_URL` environment variable
    - Connect it to your backend service
 
-**Step 5: Configure Environment Variables**
-1. Click on your web service (not the database)
+**Step 5: Connect PostgreSQL to Backend Service**
+1. Click on your **web service** (not the database)
 2. Go to "Variables" tab
-3. Add these variables:
-   - `DATABASE_URL`: Should already be set automatically
-   - `SECRET_KEY`: Click "Add Variable" and paste a random string
-     ```bash
-     # Generate a secret key (run locally):
-     python -c "import secrets; print(secrets.token_hex(32))"
-     ```
-   - `PYTHON_VERSION`: `3.14` (if needed)
+3. Click "+ New Variable"
+4. Select "Add a Reference" → Choose your PostgreSQL database
+5. Select `DATABASE_URL` from the dropdown
+6. Railway automatically injects the database connection string
 
-**Step 6: Configure Deployment**
-Railway should auto-detect settings, but verify:
-1. Click "Settings" tab
-2. Check:
-   - **Root Directory**: Leave empty (or set to `.`)
-   - **Build Command**: Auto-detected from `railway.json`
-   - **Start Command**: Auto-detected from `railway.json`
-3. Under "Networking":
-   - Click "Generate Domain" to get your public URL
-   - You'll get something like: `https://your-app-name.up.railway.app`
+**Step 6: Add Environment Variables**
+In the same Variables tab, add:
+- `SECRET_KEY`: Click "Add Variable" and paste a random string
+  ```bash
+  # Generate a secret key (run locally):
+  python -c "import secrets; print(secrets.token_hex(32))"
+  ```
 
-**Step 7: Deploy**
-1. Railway will automatically deploy on push to main
-2. Watch the deployment logs
-3. Wait for "Build successful" and "Deployment live" (3-5 minutes)
-4. Copy your public URL
+**Step 7: Configure Deployment Settings**
+1. The `railway.json` file in the repository configures:
+   - **Builder**: Dockerfile (for custom build)
+   - **Root Directory**: `backend/`
+   - **Health Check**: `/health` endpoint
+   - **Restart Policy**: Automatic restart on failure
 
-**Step 8: Update Frontend Configuration**
+2. The `backend/Dockerfile` handles:
+   - Python 3.11 slim base image
+   - PostgreSQL client installation
+   - Dependency installation from `requirements.txt`
+   - Application code copying
+
+3. The `backend/start.sh` script:
+   - Validates environment variables
+   - Initializes database tables
+   - Creates test users (if needed)
+   - Starts uvicorn server
+
+**Step 8: Generate Public Domain**
+1. In your service, click "Settings" tab
+2. Under "Networking" section:
+   - Click "Generate Domain"
+   - You'll get: `https://web-production-xxxxx.up.railway.app`
+   - This is your public HTTPS URL!
+
+**Step 9: Deploy & Monitor**
+1. Railway automatically deploys on push to main branch
+2. Watch the deployment logs in the "Deployments" tab
+3. Wait for successful deployment (~3-5 minutes)
+4. Look for:
+   - "Database tables created successfully"
+   - "Test users created"
+   - "Starting FastAPI application"
+   - "Uvicorn running on..."
+   - Health check passing on `/health`
+
+**Step 10: Update Frontend Configuration**
 Edit `config.js` and replace with your Railway URL:
 ```javascript
 const config = {
@@ -310,14 +422,28 @@ const config = {
 };
 ```
 
-**Step 9: Test the Deployment**
+**Step 11: Test the Deployment**
+
+**Test Authentication:**
 1. Open `index.html` in your browser (from your local machine)
 2. Login with test credentials:
    - Username: `testuser`
    - Password: `password123`
 3. Check browser DevTools (F12) → Network tab
-4. You should see requests going to `https://your-app-name.up.railway.app`
+4. You should see requests going to `https://web-production-xxxxx.up.railway.app`
 5. Data is now encrypted with HTTPS! 🔒
+
+**Test File Upload:**
+1. After logging in, you'll be on the dashboard
+2. Click "Choose File" and select a file
+3. Click "Upload File"
+4. Click "View Uploaded Files" to see your upload
+5. Check Network tab - file upload uses HTTPS with JWT authentication
+
+**Test API Documentation:**
+1. Visit: `https://web-production-xxxxx.up.railway.app/docs`
+2. Explore interactive API documentation (Swagger UI)
+3. Test endpoints directly from the browser
 
 #### Verify Secure Connection
 1. Open browser DevTools (F12)
@@ -337,25 +463,56 @@ const config = {
 
 #### Troubleshooting Railway Deployment
 
-**Build fails:**
-- Check logs in Railway dashboard
-- Verify `requirements.txt` is in `backend/` folder
-- Make sure `init_db.py` and `create_test_users.py` exist
+**Build fails with "pip: command not found":**
+- ✅ **Fixed:** Using Dockerfile instead of Nixpacks auto-detection
+- Verify `backend/Dockerfile` exists
+- Check `railway.json` specifies `"builder": "DOCKERFILE"`
+
+**Build fails with "python: command not found":**
+- ✅ **Fixed:** Dockerfile explicitly installs Python 3.11
+- Don't use custom start commands that bypass Dockerfile environment
 
 **Database connection error:**
 - Verify PostgreSQL database is added to project
-- Check `DATABASE_URL` is set in environment variables
-- Database should be in same Railway project
+- Check database is **connected** to web service (Variables → Add Reference)
+- Look for `DATABASE_URL` in environment variables
+- Railway auto-fixes `postgres://` → `postgresql://` in `database.py`
 
-**Frontend can't connect:**
-- Verify Railway domain is generated (Settings → Networking)
-- Check `config.js` has correct Railway URL
-- Look for CORS errors in browser console
+**Module import errors (e.g., "cannot import name 'verify_token'"):**
+- ✅ **Fixed:** Added missing functions to `auth.py`
+- Check all required functions exist in imported modules
+- Verify `__init__.py` exists in `routers/` package
 
-**App crashes on startup:**
-- Check Railway logs for errors
-- Verify `PORT` environment variable is used: `--port $PORT`
-- Make sure all dependencies are in `requirements.txt`
+**"Form data requires python-multipart":**
+- ✅ **Fixed:** Added `python-multipart==0.0.9` to `requirements.txt`
+- File upload requires this dependency for FastAPI
+
+**Health check fails:**
+- Check `/health` endpoint returns 200 OK
+- Verify uvicorn is starting (look for "Uvicorn running" in logs)
+- Increase `healthcheckTimeout` in `railway.json` if needed
+- Ensure database initialization completes before healthcheck starts
+
+**Nginx appears instead of Python app:**
+- ✅ **Fixed:** Using explicit Dockerfile prevents auto-detection issues
+- Don't let Railway auto-detect - use explicit builder configuration
+
+**Frontend can't connect to API:**
+- Verify Railway domain is generated (Settings → Networking → Generate Domain)
+- Update `config.js` with correct Railway URL
+- Check CORS is enabled in `main.py` (should allow all origins for development)
+- Look for CORS errors in browser console (F12)
+
+**Files not persisting between deployments:**
+- ⚠️ **Expected behavior:** Railway uses ephemeral storage
+- Files in `/app/uploads/` are deleted on redeployment
+- **Solution:** Use Railway Volumes or cloud storage (AWS S3)
+
+**Deployment succeeds but app crashes immediately:**
+- Check Railway Deploy Logs for Python errors
+- Verify all environment variables are set correctly
+- Look for database connection errors in startup
+- Ensure `start.sh` has execute permissions (`chmod +x start.sh`)
 
 ---
 
@@ -450,33 +607,210 @@ Now both client AND server are on separate machines with HTTPS!
 
 ### 8. API Endpoints
 
+#### Authentication
 - `POST /api/login` - Authenticate user and return JWT token
 - `POST /api/register` - Register new user
+
+#### File Management (JWT Required)
+- `POST /api/upload` - Upload files (requires authentication)
+  - **Headers:** `Authorization: Bearer <token>`
+  - **Body:** `multipart/form-data` with file
+  - **Max Size:** 50MB
+  - **Response:** File metadata including unique filename and upload timestamp
+
+- `GET /api/uploads` - List all uploaded files (requires authentication)
+  - **Headers:** `Authorization: Bearer <token>`
+  - **Response:** Array of file metadata (filename, size, modified date)
+
+#### Health & Monitoring
+- `GET /` - API status and version information
+- `GET /health` - Health check endpoint for monitoring
+- `GET /docs` - Interactive API documentation (Swagger UI)
 
 ### 9. Project Structure
 ```
 CS4310-Security_Project/
 ├── backend/
-│   ├── main.py              # FastAPI app entry point
-│   ├── database.py          # Database connection
-│   ├── models.py            # SQLAlchemy models
-│   ├── schemas.py           # Pydantic schemas
-│   ├── auth.py              # Authentication functions
-│   ├── init_db.py           # Database initialization script
-│   ├── create_test_users.py # Test user creation script
-│   ├── build.sh             # Deployment build script
-│   ├── .env                 # Environment variables (not in git)
-│   ├── .env.example         # Example environment variables
-│   ├── requirements.txt     # Python dependencies
+│   ├── main.py                  # FastAPI app entry point
+│   ├── database.py              # Database connection & configuration
+│   ├── models.py                # SQLAlchemy ORM models
+│   ├── schemas.py               # Pydantic request/response schemas
+│   ├── auth.py                  # Authentication & JWT functions
+│   ├── init_db.py               # Database initialization script
+│   ├── create_test_users.py    # Test user creation script
+│   ├── start.sh                 # Production startup script (Railway)
+│   ├── build.sh                 # Deployment build script
+│   ├── Dockerfile               # Docker container configuration
+│   ├── nixpacks.toml            # Nixpacks build configuration
+│   ├── .env                     # Environment variables (not in git)
+│   ├── .env.example             # Example environment variables
+│   ├── requirements.txt         # Python dependencies
+│   ├── schema.sql               # Database schema definition
+│   ├── uploads/                 # Uploaded files directory (gitignored)
 │   └── routers/
-│       ├── login.py         # Login endpoint
-│       └── register.py      # Registration endpoint
-├── index.html               # Login page
-├── dashboard.html           # Dashboard page
-├── config.js                # API configuration (local/production)
-├── railway.json             # Railway deployment configuration
-├── Procfile                 # Alternative deployment configuration
-├── render.yaml              # Render deployment configuration (alternative)
-├── .gitignore               # Git ignore rules
-└── README.md                # This file
+│       ├── __init__.py          # Router package initialization
+│       ├── login.py             # Login endpoint
+│       ├── register.py          # Registration endpoint
+│       └── upload.py            # File upload endpoints (NEW)
+├── index.html                   # Login page
+├── dashboard.html               # Dashboard page with file upload
+├── dashboard.css                # Dashboard styling
+├── login.css                    # Login page styling
+├── config.js                    # API configuration (local/production)
+├── railway.json                 # Railway deployment configuration
+├── .gitignore                   # Git ignore rules
+├── INDIVIDUAL_REPORT.md         # Individual contribution report
+└── README.md                    # This file
 ```
+
+---
+
+## 10. Current Implementation Status
+
+### ✅ Completed Features
+
+- **Authentication System**
+  - User registration with hashed passwords
+  - JWT-based login system
+  - Token-based session management
+  - Secure password hashing with unique salts per user
+
+- **Backend API**
+  - FastAPI framework with automatic OpenAPI documentation
+  - PostgreSQL database with SQLAlchemy ORM
+  - RESTful API endpoints for auth and file management
+  - CORS configuration for cross-origin requests
+
+- **File Upload System**
+  - Secure file upload with JWT authentication
+  - 50MB file size limit
+  - UUID-based filename generation
+  - File listing endpoint
+  - User attribution tracking
+
+- **Cloud Deployment**
+  - Backend deployed to Railway with HTTPS
+  - PostgreSQL database hosted on Railway
+  - Automatic SSL/TLS encryption
+  - Health monitoring and auto-restart
+  - Environment variable management
+
+- **Security Implementations**
+  - HTTPS/TLS encryption for all production traffic
+  - JWT token expiration (30 minutes)
+  - Server-side token validation
+  - SQL injection prevention via ORM
+  - Password hashing with SHA-256 + salt
+  - CORS protection
+
+### 🚧 Planned Enhancements
+
+- **Database File Tracking**
+  - Create `uploaded_files` table for metadata
+  - Associate files with users and productions
+  - Enable file search and filtering
+
+- **Persistent Storage**
+  - Railway Volumes integration
+  - AWS S3 cloud storage option
+  - File backup and recovery
+
+- **Advanced Features**
+  - File sharing between team members
+  - Role-based access control for files
+  - File version control
+  - File preview and download functionality
+  - Real-time collaboration features
+
+- **Production Hardening**
+  - Rate limiting on API endpoints
+  - Enhanced error handling
+  - Comprehensive logging
+  - Performance monitoring
+  - Automated backups
+
+---
+
+## 11. Important Notes
+
+### Security Considerations
+
+1. **Environment Variables**: Never commit `.env` files to git. Always use `.env.example` as a template.
+
+2. **JWT Tokens**: Tokens expire after 30 minutes. Users must re-login after expiration.
+
+3. **File Storage**: Railway uses ephemeral storage. Files are deleted on redeployment. For production, implement persistent storage.
+
+4. **CORS**: Current configuration allows all origins (`*`) for development. In production, restrict to specific domains.
+
+5. **Secret Keys**: Always generate strong, random secret keys for production. Never use default values.
+
+### Development Guidelines
+
+1. **Local Development**:
+   - Always work in a virtual environment
+   - Keep `requirements.txt` updated
+   - Test changes locally before pushing
+
+2. **Version Control**:
+   - Use feature branches for new features
+   - Write clear commit messages
+   - Review changes before merging to main
+
+3. **Testing**:
+   - Test authentication flow thoroughly
+   - Verify file uploads work correctly
+   - Check HTTPS connections in production
+   - Monitor deployment logs
+
+4. **Documentation**:
+   - Update README when adding features
+   - Document API changes
+   - Keep environment variable examples current
+
+---
+
+## 12. Support and Resources
+
+### Documentation
+- FastAPI: https://fastapi.tiangolo.com/
+- Railway: https://docs.railway.app/
+- PostgreSQL: https://www.postgresql.org/docs/
+- SQLAlchemy: https://docs.sqlalchemy.org/
+
+### API Testing
+- Swagger UI: `/docs` endpoint
+- Redoc: `/redoc` endpoint
+- Manual testing: Browser DevTools (F12 → Network tab)
+
+### Deployment
+- **Railway Dashboard**: https://railway.app/dashboard
+- **GitHub Repository**: https://github.com/abbyPrime/CS4310-Security_Project
+- **Production API**: https://web-production-8b8e1f.up.railway.app
+
+### Troubleshooting
+1. Check deployment logs in Railway dashboard
+2. Review browser console for frontend errors
+3. Test API endpoints using `/docs` interface
+4. Verify environment variables are set correctly
+5. Consult this README's troubleshooting sections
+
+---
+
+## 13. Contributors
+
+**Course**: CS4310 - Computer Security
+**Institution**: Bowling Green State University
+**Project**: CinemaShare - Secure Screenplay Sharing Platform
+
+For questions or issues, please:
+1. Check the troubleshooting sections in this README
+2. Review deployment logs in Railway dashboard
+3. Test using the `/docs` API documentation
+4. Consult the `INDIVIDUAL_REPORT.md` for technical implementation details
+
+---
+
+**Last Updated**: April 6, 2026
+**Version**: 2.0.0 (with file upload feature)
+**Status**: ✅ Production Deployed
