@@ -4,6 +4,7 @@
         <meta charset="UTF-8">
         <title>CinemaShare Dashboard</title>
         <link rel="stylesheet" href="dashboard.css">
+        <script src="config.js"></script>
     </head>
     <body>
         <header class="navbar">
@@ -24,10 +25,14 @@
             <div class="container">
                 <h2>Dashboard</h2>
                 <p>Welcome to your CinemaShare dashboard!</p>
+
+                <h3>File Upload</h3>
+                <input type="file" id="fileInput" />
+                <button onclick="uploadFile()">Upload File</button>
+                <button onclick="listFiles()">View Uploaded Files</button>
+
+                <div id="fileList" style="margin-top: 20px;"></div>
             </div>
-            
-            <input type="file" id="fileInput" />
-            <button onclick="uploadFile()">Upload File</button>
 
         <script>
             // Check if user is authenticated
@@ -73,7 +78,7 @@
                     return;
                 }
 
-                const url = window.API_CONFIG.API_URL + "/upload/"; // Update with backend endpoint
+                const url = window.API_CONFIG.API_URL + "/api/upload";
 
                 const formData = new FormData();
                 formData.append('file', file);
@@ -81,15 +86,55 @@
                 fetch(url, {
                     method: 'POST',
                     body: formData,
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
                 })
                 .then(response => response.json())
                 .then(data => {
-                    alert('File uploaded successfully!');
-                    console.log('Upload response:', data);
+                    if (data.success) {
+                        alert('File uploaded successfully!');
+                        console.log('Upload response:', data);
+                        listFiles(); // Refresh file list
+                    } else {
+                        alert('Upload failed: ' + (data.detail || 'Unknown error'));
+                    }
                 })
                 .catch(error => {
                     console.error('Error uploading file:', error);
                     alert('Failed to upload file.');
+                });
+           }
+
+           // List all uploaded files
+           function listFiles() {
+                const url = window.API_CONFIG.API_URL + "/api/uploads";
+
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const fileListDiv = document.getElementById('fileList');
+
+                    if (data.success && data.files.length > 0) {
+                        let html = '<h4>Uploaded Files (' + data.total + '):</h4><ul>';
+                        data.files.forEach(file => {
+                            const sizeKB = (file.size / 1024).toFixed(2);
+                            html += `<li><strong>${file.filename}</strong> - ${sizeKB} KB (Modified: ${new Date(file.modified).toLocaleString()})</li>`;
+                        });
+                        html += '</ul>';
+                        fileListDiv.innerHTML = html;
+                    } else {
+                        fileListDiv.innerHTML = '<p>No files uploaded yet.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error listing files:', error);
+                    document.getElementById('fileList').innerHTML = '<p style="color: red;">Failed to load files.</p>';
                 });
            }
         </script>
