@@ -31,11 +31,11 @@
 
         <script>
             // Check if user is authenticated
-            const token = localStorage.getItem('access_token');
-            if (!token) {
+            //const token = localStorage.getItem('access_token');
+            //if (!token) {
                 // Redirect to login if no token found
-                window.location.href = 'index.html';
-            }
+                //window.location.href = 'index.html';
+            //}
 
             // Dropdown menu functionality
             const profileButton = document.querySelector('.profile-button');
@@ -73,17 +73,14 @@
                     return;
                 }
 
-                const url = '${window.API_CONFIG.API_URL}/upload'; // Update with backend endpoint
+                const url = window.API_CONFIG.API_URL + "/upload/"; // Update with backend endpoint
 
                 const formData = new FormData();
                 formData.append('file', file);
 
-                fetch('/upload', {
+                fetch(url, {
                     method: 'POST',
                     body: formData,
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
                 })
                 .then(response => response.json())
                 .then(data => {
