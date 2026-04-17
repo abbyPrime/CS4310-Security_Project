@@ -16,6 +16,10 @@ __pycache__/
 # PostgreSQL
 *.sql.bak
 
+# Uploaded files
+backend/uploads/
+uploads/
+
 # IDE
 .vscode/
 .idea/
