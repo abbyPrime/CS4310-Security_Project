@@ -4,8 +4,8 @@
         <meta charset="UTF-8">
         <title>CinemaShare Login</title>
         <link rel="stylesheet" href="index.css">
+        <script src="config.js"></script>
     </head>
-
     <body>
         <div class="container">
             <h1>CinemaShare</h1>
@@ -23,22 +23,43 @@
                 <button type="submit" class="button">Submit</button>
             </form>
         </div>
+
         <script>
-            document.getElementById('loginForm').addEventListener('submit', function(event) {
+            document.getElementById('loginForm').addEventListener('submit', async function(event) {
                 event.preventDefault(); // Prevent the login form from submitting normally
 
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
 
-                // Simple validation (for demonstration purposes)
-                if (username === 'admin' && password === 'password') {
-                    // alert('Login successful!');
-                    window.location.href = 'dashboard.html'; // Redirect to dashboard
-                } else {
-                    alert('Invalid username or password.');
+                try {
+                    //Call the backend API (automatically uses local or production URL)
+                    const apiUrl = window.API_CONFIG.API_URL;
+                    const response = await fetch(`${apiUrl}/api/login`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            username: username,
+                            password: password
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        // Store the JWT token
+                        localStorage.setItem('access_token', data.access_token);
+                        // Redirect to dashboard
+                        window.location.href = 'dashboard.html';
+                    } else {
+                        const error = await response.json();
+                        alert(error.detail || 'Invalid username or password.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Failed to connect to server. Please ensure the backend is running.');
                 }
             });
         </script>
-    </body>
-    
+    </body> 
 </html>

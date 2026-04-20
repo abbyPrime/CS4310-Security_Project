@@ -1,0 +1,11 @@
+[providers]
+python = "3.11"
+
+[phases.setup]
+nixPkgs = ["python311", "postgresql"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[start]
+cmd = "python init_db.py || true && python create_test_users.py || true && python -m uvicorn main:app --host 0.0.0.0 --port $PORT"
