@@ -101,3 +101,8 @@ h1 {
     color: #6a737d;
     font-size: 12px;
 }
+
+.profile-icon {
+    font-size: 40px;
+    cursor: pointer;
+}
