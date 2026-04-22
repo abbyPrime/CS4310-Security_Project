@@ -34,16 +34,20 @@ async def upload_file(
 
     user_id = int(current_user.get("sub"))
 
-    db_file = UploadedFile(
-        original_filename=file.filename,
-        file_data=contents,
-        file_size=len(contents),
-        content_type=file.content_type,
-        uploaded_by=user_id
-    )
-    db.add(db_file)
-    db.commit()
-    db.refresh(db_file)
+    try:
+        db_file = UploadedFile(
+            original_filename=file.filename,
+            file_data=contents,
+            file_size=len(contents),
+            content_type=file.content_type,
+            uploaded_by=user_id
+        )
+        db.add(db_file)
+        db.commit()
+        db.refresh(db_file)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"DB error: {str(e)}")
 
     return {
         "success": True,
