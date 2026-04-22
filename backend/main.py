@@ -1,9 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import login, register, upload
+from database import engine
+from models import Base
 import os
 
 app = FastAPI(title="CinemaShare API", version="1.0.0")
+
+
+@app.on_event("startup")
+def create_tables():
+    Base.metadata.create_all(bind=engine)
 
 # Enable CORS
 app.add_middleware(
