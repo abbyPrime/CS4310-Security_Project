@@ -124,7 +124,11 @@
                         let html = '<h4>Uploaded Files (' + data.total + '):</h4><ul>';
                         data.files.forEach(file => {
                             const sizeKB = (file.size / 1024).toFixed(2);
-                            html += `<li><strong>${file.filename}</strong> - ${sizeKB} KB (Modified: ${new Date(file.modified).toLocaleString()})</li>`;
+                            const uploadedAt = file.uploaded_at ? new Date(file.uploaded_at).toLocaleString() : '';
+                            html += `<li>
+                                <strong>${file.filename}</strong> - ${sizeKB} KB (${uploadedAt})
+                                <button onclick="downloadFile(${file.file_id}, '${file.filename}')" style="margin-left: 10px;">Download</button>
+                            </li>`;
                         });
                         html += '</ul>';
                         fileListDiv.innerHTML = html;
@@ -135,6 +139,33 @@
                 .catch(error => {
                     console.error('Error listing files:', error);
                     document.getElementById('fileList').innerHTML = '<p style="color: red;">Failed to load files.</p>';
+                });
+           }
+
+           // Download a file
+           function downloadFile(fileId, filename) {
+                const url = window.API_CONFIG.API_URL + "/api/download/" + fileId;
+
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Download failed');
+                    return response.blob();
+                })
+                .then(blob => {
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = filename;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                })
+                .catch(error => {
+                    console.error('Error downloading file:', error);
+                    alert('Failed to download file.');
                 });
            }
         </script>

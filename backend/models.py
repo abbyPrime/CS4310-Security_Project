@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, LargeBinary, Boolean
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from database import Base
@@ -52,3 +52,18 @@ class UserRole(Base):
 
     user_id = Column(Integer, ForeignKey("users.user_id"), primary_key=True)
     role_id = Column(Integer, ForeignKey("roles.role_id"), primary_key=True)
+
+
+class UploadedFile(Base):
+    __tablename__ = "uploaded_files"
+
+    file_id = Column(Integer, primary_key=True, index=True)
+    original_filename = Column(String(255), nullable=False)
+    file_data = Column(LargeBinary, nullable=False)
+    file_size = Column(Integer, nullable=False)
+    content_type = Column(String(100))
+    uploaded_by = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    uploaded_at = Column(DateTime, server_default=func.now())
+    is_revoked = Column(Boolean, default=False)
+
+    uploader = relationship("User")
