@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, sys
 
 def can_view_line(
     line: Dict[str, Any],
@@ -137,9 +137,14 @@ production_member = {
 }
 
 # Run
+# Inputs are: scriptName and table
+if len(sys.argv) > 1:
+    scriptName = sys.argv[1]
+else:
+    print("Error, file name not provided") # file not provided
 process_script_file(
-    "input_script.txt",
-    "filtered_script.txt",
+    scriptName,
+    "Example_Script2.txt",
     script_table,
     production_member
 )
