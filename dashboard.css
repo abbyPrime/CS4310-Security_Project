@@ -4,15 +4,27 @@ body {
     font-family: Arial, sans-serif;
     background: white;
     margin: 0;
+    padding: 0;
+    color: #222;
 }
-
 
 h1 {
     text-align: left;
     padding : 20px;
     background: black;
     color: rgba(76, 81, 223, 0.916);
-    font-size: 36px;
+    font-size: 40px;
+    margin: 20px;
+}
+
+h2 {
+    font-size:28px;
+    margin-bottom:10px;
+}
+
+h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
 }
 
 .navbar {
@@ -33,30 +45,40 @@ h1 {
     border: none;
     color: white;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 50px;
+}
+
+.profile-container {
+    position: relative;
 }
 
 .dropdown {
-    display: block;
+    display: none;
     position: absolute;
     right: 0;
+    top: 40px;
     background-color: white;
     color: blue;
     border: 1px solid #ccc;
-    margin-top: 5px;
+    border-radius: 8px;
+    min-width: 150px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.dropdown.show{
+    display: block;
 }
 
 .dropdown a {
     display: block;
     padding: 10px;
+    color: #333;
     text-decoration: none;
-    color: black;
 }
 
 .dropdown a:hover {
-    display: block;
-    background-color: blue;
-    color: white;
+    background: #f2f4f8;
 }
 
 .container {
@@ -68,10 +90,24 @@ h1 {
     max-width: 400px;
     background: white;
     border-radius: 16px;
+    border: 1px solid #e6e6e6;
     padding: 20px;
+    margin: 20px;
     margin-bottom: 20px;
     box-shadow: 0 4px 12px rgba(0,0, 0, 0.08);
 }
+
+.button {
+    padding: 10px 14px;
+    border: none;
+    border-radius: 6px;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
 
 .file-explorer {
     background: white;

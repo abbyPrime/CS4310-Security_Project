@@ -11,12 +11,11 @@
             <h1 class="logo">CinemaShare</h1>
             
             <div class="profile-menu">
-                <button class="profile-button">
-                    <span class="profile-icon">👤</span>
-                </button>
-            
+                <button class="profile-button">👤</button>
 
                 <div class="dropdown">
+                    <a href="#">Profile</a>
+                    <a href="#">Settings</a>
                     <a href="index.html">Logout</a>
                 </div>
             </div>
@@ -87,7 +86,7 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             applyRBAC();
-            document.getElementByID('roleDisplay').textContent = `Role ${role}`;
+            document.getElementById('roleDisplay').textContent = `Role ${role}`;
         });
 
             // Dropdown menu functionality
