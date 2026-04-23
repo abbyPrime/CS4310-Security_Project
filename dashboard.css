@@ -1,16 +1,17 @@
 /* Style for the Dashboard Page */
 
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    background: rgba(198, 188, 198, 0.518);
+    font-family: Arial, sans-serif;
+    background: white;
     margin: 0;
 }
+
 
 h1 {
     text-align: left;
     padding : 20px;
     background: black;
-    color: rgba(219, 208, 45, 0.916);
+    color: rgba(76, 81, 223, 0.916);
     font-size: 36px;
 }
 
@@ -19,7 +20,7 @@ h1 {
     justify-content: space-between;
     align-items: center;
     padding: 10px 20px;
-    background-color: #222;
+    background-color: black;
     color: white;
 }
 
@@ -40,7 +41,7 @@ h1 {
     position: absolute;
     right: 0;
     background-color: white;
-    color: black;
+    color: blue;
     border: 1px solid #ccc;
     margin-top: 5px;
 }
@@ -54,6 +55,54 @@ h1 {
 
 .dropdown a:hover {
     display: block;
-    background-color: black;
+    background-color: blue;
     color: white;
+}
+
+.container {
+    padding: 20px;
+}
+
+.card {
+    width: 100%;
+    max-width: 400px;
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0,0, 0, 0.08);
+}
+
+.file-explorer {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0, 0, 0.08)
+}
+
+.file-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.file-row:hover {
+    background: #f6f8fa;
+}
+
+.file-name {
+    font-weight: 500;
+}
+
+.file-meta {
+    color: #6a737d;
+    font-size: 12px;
+}
+
+.profile-icon {
+    font-size: 40px;
+    cursor: pointer;
 }

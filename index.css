@@ -2,7 +2,7 @@
 
 body {
     font-family: Arial, sans-serif;
-    background: rgba(198, 188, 198, 0.518);
+    background: black;
     margin: 0;
 }
 
@@ -17,7 +17,7 @@ body {
 
 h1 {
     text-align: center;
-    color: rgb(20, 17, 17);
+    color: black;
 }
 
 .form-group {
@@ -27,7 +27,7 @@ h1 {
 label {
     display: block;
     margin-bottom: 5px;
-    color: #ccc;
+    color: black;
 }
 
 input[type="text"],
@@ -41,7 +41,7 @@ input[type="password"] {
 .button {
     width: 100%;
     padding: 10px;
-    background-color: #4158a8;
+    background-color: rgba(76, 81, 223, 0.916);
     color: white;
     border: none;
     border-radius: 5px;
