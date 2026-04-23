@@ -91,3 +91,16 @@ CREATE TABLE messages (
     FOREIGN KEY (sender_id) REFERENCES users(user_id),
     FOREIGN KEY (recipient_id) REFERENCES users(user_id)
 );
+
+-- Uploaded files (stored in DB for persistence)
+CREATE TABLE uploaded_files (
+    file_id             SERIAL PRIMARY KEY,
+    original_filename   VARCHAR(255) NOT NULL,
+    file_data           BYTEA NOT NULL,
+    file_size           INT NOT NULL,
+    content_type        VARCHAR(100),
+    uploaded_by         INT NOT NULL,
+    uploaded_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_revoked          BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (uploaded_by) REFERENCES users(user_id)
+);

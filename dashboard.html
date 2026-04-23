@@ -11,12 +11,11 @@
             <h1 class="logo">CinemaShare</h1>
             
             <div class="profile-menu">
-                <button class="profile-button">
-                    <img src="profile-icon.png" alt="Profile Icon" class="profile-icon">
-                </button>
-            
+                <button class="profile-button">👤</button>
 
                 <div class="dropdown">
+                    <a href="#">Profile</a>
+                    <a href="#">Settings</a>
                     <a href="index.html">Logout</a>
                 </div>
             </div>
@@ -25,22 +24,70 @@
             <div class="container">
                 <h2>Dashboard</h2>
                 <p>Welcome to your CinemaShare dashboard!</p>
+                <p id="roleDisplay"></p>
 
-                <h3>File Upload</h3>
-                <input type="file" id="fileInput" />
-                <button onclick="uploadFile()">Upload File</button>
-                <button onclick="listFiles()">View Uploaded Files</button>
+                <div class="card">
+                    <h3>File Upload</h3>
+                    <input type="file" id="fileInput" />
+                    <button onclick="uploadFile()">Upload Screenplay</button>
+                    <button onclick="listFiles()">View Uploaded Files</button>
+                </div>
+                // Remove when Backend is ready.
+                <div class="file-row" onclick="openFile('script.pdf')">
+                    <span class="file-name">script.pdf</span>
+                    <span class="file-meta">200KB</span>
+                </div>
+                // Remove when Backend is ready.
+                <div class="file-row" onclick="openFile('script2.pdf')">
+                    <span class="file-name">script2.pdf</span>
+                    <span class="file-meta">140KB</span>
+                </div>
 
                 <div id="fileList" style="margin-top: 20px;"></div>
             </div>
 
         <script>
             // Check if user is authenticated
-            const token = localStorage.getItem('access_token');
+            let token = localStorage.getItem('access_token');
+
+            if (!token && window.location.protocol === 'file:') {
+                console.warn("DEV MODE: Allowing local access");
+                token = "dev-token";
+
+                localStorage.setItem('access_token', token);
+                localStorage.setItem('role', 'producer');
+            }
+
             if (!token) {
                 //Redirect to login if no token found
                 window.location.href = 'index.html';
             }
+
+            // Track User Role
+            const role = localStorage.getItem('role') || 'screenwriter'; // Placeholder for RBAC implementation
+
+            function applyRBAC() {
+                const uploadCard = document.querySelector('.card');
+                const fileUploadTitle = uploadCard.querySelector('h3');
+
+                // Actors will NOT be allowed to upload files
+                if (role === 'actor') {
+                    uploadCard.style.display = 'none';
+                }
+
+                if (role === 'producer') {
+                    fileUploadTitle.textContent = 'Manage Scripts';
+                }
+
+                if (role === 'screenwriter') {
+                    fileUploadTitle.textContent = 'Upload Script';
+                }
+            }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            applyRBAC();
+            document.getElementById('roleDisplay').textContent = `Role ${role}`;
+        });
 
             // Dropdown menu functionality
             const profileButton = document.querySelector('.profile-button');
@@ -71,8 +118,14 @@
 
             // Handle file upload
            function uploadFile() {
+                if (role === 'actor') {
+                    alert('Actors are not allowed to upload scripts.');
+                    return;
+                }
+
                 const fileInput = document.getElementById('fileInput');
                 const file = fileInput.files[0];
+
                 if (!file) {
                     alert('Please select a file to upload.');
                     return;
@@ -124,7 +177,11 @@
                         let html = '<h4>Uploaded Files (' + data.total + '):</h4><ul>';
                         data.files.forEach(file => {
                             const sizeKB = (file.size / 1024).toFixed(2);
-                            html += `<li><strong>${file.filename}</strong> - ${sizeKB} KB (Modified: ${new Date(file.modified).toLocaleString()})</li>`;
+                            const uploadedAt = file.uploaded_at ? new Date(file.uploaded_at).toLocaleString() : '';
+                            html += `<li>
+                                <strong>${file.filename}</strong> - ${sizeKB} KB (${uploadedAt})
+                                <button onclick="downloadFile(${file.file_id}, '${file.filename}')" style="margin-left: 10px;">Download</button>
+                            </li>`;
                         });
                         html += '</ul>';
                         fileListDiv.innerHTML = html;
@@ -135,6 +192,33 @@
                 .catch(error => {
                     console.error('Error listing files:', error);
                     document.getElementById('fileList').innerHTML = '<p style="color: red;">Failed to load files.</p>';
+                });
+           }
+
+           // Download a file
+           function downloadFile(fileId, filename) {
+                const url = window.API_CONFIG.API_URL + "/api/download/" + fileId;
+
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Download failed');
+                    return response.blob();
+                })
+                .then(blob => {
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = filename;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                })
+                .catch(error => {
+                    console.error('Error downloading file:', error);
+                    alert('Failed to download file.');
                 });
            }
         </script>

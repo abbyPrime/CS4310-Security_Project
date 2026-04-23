@@ -32,22 +32,17 @@ def init_database():
                 conn.commit()
 
             print("✅ Database tables created successfully from schema.sql!")
-            print("\nCreated tables:")
-            print("  - users")
-            print("  - productions")
-            print("  - user_productions")
-            print("  - roles")
-            print("  - user_roles")
-            print("  - screenplays")
-            print("  - screenplay_lines")
-            print("  - line_permissions")
-            print("  - comments")
-            print("  - messages")
-            print("\nNext step: Run 'python create_test_users.py' to create test users")
+
+        # Always run create_all to catch any models not in schema.sql
+        from models import User, Production, UserProduction, Role, UserRole, UploadedFile
+        from database import Base
+        Base.metadata.create_all(bind=engine)
+        print("✅ SQLAlchemy models synced (any missing tables created)")
+        print("\nNext step: Run 'python create_test_users.py' to create test users")
         else:
             print(f"❌ schema.sql not found at {schema_path}")
             print("Falling back to SQLAlchemy models...")
-            from models import User, Production, UserProduction, Role, UserRole
+            from models import User, Production, UserProduction, Role, UserRole, UploadedFile
             from database import Base
             Base.metadata.create_all(bind=engine)
             print("✅ Basic tables created from models")
