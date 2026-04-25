@@ -36,6 +36,12 @@
 
                 <div id="fileList" style="margin-top: 20px;"></div>
 
+                <div class="card">
+                    <h3>Available Screenplays</h3>
+                    <button onclick="listScreenplays()">Refresh</button>
+                    <div id="screenplayList" style="margin-top:10px;"></div>
+                </div>
+
                 <div class="card" id="screenplayUploadCard">
                     <h3>Upload Screenplay (.txt, line-based)</h3>
                     <input type="file" id="screenplayInput" accept=".txt" />
@@ -94,7 +100,8 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             applyRBAC();
-            document.getElementById('roleDisplay').textContent = `Role ${role}`;
+            document.getElementById('roleDisplay').textContent = `Role: ${role}`;
+            listScreenplays();
         });
 
             // Dropdown menu functionality
@@ -368,6 +375,34 @@
                     else alert('Failed: ' + (data.detail || 'Unknown'));
                 })
                 .catch(() => alert('Failed to save permissions.'));
+           }
+
+           // List all available screenplays (visible to all roles)
+           function listScreenplays() {
+                fetch(window.API_CONFIG.API_URL + "/api/screenplays", {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    const div = document.getElementById('screenplayList');
+                    if (!data.success || data.screenplays.length === 0) {
+                        div.innerHTML = '<p>No screenplays available.</p>';
+                        return;
+                    }
+                    let html = '<ul>';
+                    data.screenplays.forEach(f => {
+                        const date = f.uploaded_at ? new Date(f.uploaded_at).toLocaleString() : '';
+                        html += `<li>
+                            <strong>${f.filename}</strong> — uploaded by ${f.uploaded_by} (${date})
+                            <button onclick="viewScreenplay(${f.file_id}, '${f.filename}')" style="margin-left:10px;">View</button>
+                        </li>`;
+                    });
+                    html += '</ul>';
+                    div.innerHTML = html;
+                })
+                .catch(() => {
+                    document.getElementById('screenplayList').innerHTML = '<p style="color:red;">Failed to load screenplays.</p>';
+                });
            }
 
            function closeViewer() {

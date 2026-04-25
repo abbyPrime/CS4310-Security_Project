@@ -29,6 +29,37 @@ class PermissionsBody(BaseModel):
     permissions: List[LinePermission]
 
 
+@router.get("/screenplays")
+def list_screenplays(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    from models import User
+    from sqlalchemy import distinct
+
+    file_ids_with_lines = db.query(distinct(FileLine.file_id)).subquery()
+
+    files = db.query(UploadedFile, User.username).join(
+        User, User.user_id == UploadedFile.uploaded_by
+    ).filter(
+        UploadedFile.file_id.in_(file_ids_with_lines),
+        UploadedFile.is_revoked == False
+    ).all()
+
+    return {
+        "success": True,
+        "screenplays": [
+            {
+                "file_id": f.UploadedFile.file_id,
+                "filename": f.UploadedFile.original_filename,
+                "uploaded_by": f.username,
+                "uploaded_at": f.UploadedFile.uploaded_at.isoformat() if f.UploadedFile.uploaded_at else None
+            }
+            for f in files
+        ]
+    }
+
+
 @router.post("/upload-screenplay")
 async def upload_screenplay(
     file: UploadFile = File(...),
