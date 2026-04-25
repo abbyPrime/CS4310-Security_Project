@@ -2,9 +2,10 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from auth import verify_token
 from database import get_db
-from models import UploadedFile
+from models import UploadedFile, FileLine
 from datetime import datetime
 
 router = APIRouter()
@@ -74,9 +75,12 @@ async def list_uploads(
 ):
     user_id = int(current_user.get("sub"))
 
+    screenplay_file_ids = select(FileLine.file_id).distinct()
+
     files = db.query(UploadedFile).filter(
         UploadedFile.uploaded_by == user_id,
-        UploadedFile.is_revoked == False
+        UploadedFile.is_revoked == False,
+        UploadedFile.file_id.not_in(screenplay_file_ids)
     ).order_by(UploadedFile.uploaded_at.desc()).all()
 
     return {
