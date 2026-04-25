@@ -279,7 +279,7 @@
                 currentViewFileId = fileId;
                 document.getElementById('viewerTitle').textContent = 'Screenplay: ' + filename;
                 document.getElementById('screenplayViewer').style.display = 'block';
-                document.getElementById('savePermBtn').style.display = role === 'producer' ? 'block' : 'none';
+                document.getElementById('savePermBtn').style.display = role === 'producer' ? 'inline-block' : 'none';
                 document.getElementById('viewerLines').innerHTML = 'Loading...';
 
                 fetch(window.API_CONFIG.API_URL + "/api/files/" + fileId + "/view", {
@@ -289,28 +289,70 @@
                 .then(data => {
                     if (!data.success) { document.getElementById('viewerLines').innerHTML = '<p>Not a screenplay file.</p>'; return; }
 
-                    let html = '';
-                    data.lines.forEach(line => {
-                        const bg = line.visible ? '' : 'background:#ffe0e0;';
-                        const text = line.content || '&nbsp;';
-                        let checksHtml = '';
-                        if (role === 'producer') {
-                            checksHtml = ROLES.map(r => `
-                                <label style="margin-left:8px; font-size:0.8em;">
-                                    <input type="checkbox" class="perm-check"
-                                        data-line="${line.line_id}" data-role="${r}"
-                                        ${line.allowed_roles.length === 0 || line.allowed_roles.includes(r) ? 'checked' : ''}>
-                                    ${r}
-                                </label>`).join('');
-                        }
-                        html += `<div style="padding:2px 4px; margin:1px 0; ${bg}">
-                            <span style="color:#999; margin-right:8px; user-select:none;">${line.line_number}.</span>
-                            <span>${text}</span>${checksHtml}
-                        </div>`;
-                    });
-                    document.getElementById('viewerLines').innerHTML = html;
+                    if (role === 'producer') {
+                        // Table layout with column-select headers
+                        let html = `<table style="width:100%; border-collapse:collapse; font-family:monospace; font-size:0.9em;">
+                            <thead>
+                                <tr style="background:#333; color:#fff; position:sticky; top:0;">
+                                    <th style="width:40px; padding:6px;">#</th>
+                                    <th style="text-align:left; padding:6px;">Content</th>
+                                    ${ROLES.map(r => `
+                                    <th style="width:100px; padding:6px; text-align:center;">
+                                        ${r}<br>
+                                        <label style="font-size:0.8em; font-weight:normal; cursor:pointer;">
+                                            <input type="checkbox" id="selectAll_${r}" onchange="toggleAllRole('${r}', this.checked)" checked>
+                                            all
+                                        </label>
+                                    </th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                        data.lines.forEach((line, i) => {
+                            const checked = (r) => line.allowed_roles.length === 0 || line.allowed_roles.includes(r);
+                            const bg = i % 2 === 0 ? '#1a1a1a' : '#222';
+                            html += `<tr style="background:${bg};">
+                                <td style="padding:4px 6px; color:#666; text-align:center;">${line.line_number}</td>
+                                <td style="padding:4px 6px;">${line.content || '&nbsp;'}</td>
+                                ${ROLES.map(r => `
+                                <td style="text-align:center; padding:4px;">
+                                    <input type="checkbox" class="perm-check" data-line="${line.line_id}" data-role="${r}" ${checked(r) ? 'checked' : ''}>
+                                </td>`).join('')}
+                            </tr>`;
+                        });
+
+                        html += '</tbody></table>';
+                        document.getElementById('viewerLines').innerHTML = html;
+
+                        // Sync "all" header checkboxes on initial render
+                        ROLES.forEach(r => syncHeaderCheck(r));
+                    } else {
+                        // Non-producer: plain view with [REDACTED]
+                        let html = '<table style="width:100%; border-collapse:collapse; font-family:monospace; font-size:0.9em;">';
+                        data.lines.forEach((line, i) => {
+                            const bg = !line.visible ? '#3a0000' : (i % 2 === 0 ? '#1a1a1a' : '#222');
+                            const color = !line.visible ? '#888' : 'inherit';
+                            html += `<tr style="background:${bg}; color:${color};">
+                                <td style="padding:4px 6px; color:#555; width:40px; text-align:center;">${line.line_number}</td>
+                                <td style="padding:4px 6px;">${line.content}</td>
+                            </tr>`;
+                        });
+                        html += '</table>';
+                        document.getElementById('viewerLines').innerHTML = html;
+                    }
                 })
                 .catch(() => { document.getElementById('viewerLines').innerHTML = '<p style="color:red;">Failed to load screenplay.</p>'; });
+           }
+
+           function toggleAllRole(roleName, checked) {
+                document.querySelectorAll(`.perm-check[data-role="${roleName}"]`)
+                    .forEach(cb => cb.checked = checked);
+           }
+
+           function syncHeaderCheck(roleName) {
+                const all = [...document.querySelectorAll(`.perm-check[data-role="${roleName}"]`)];
+                const header = document.getElementById(`selectAll_${roleName}`);
+                if (header) header.checked = all.every(cb => cb.checked);
            }
 
            async function savePermissions() {
