@@ -5,6 +5,7 @@
         <title>CinemaShare Dashboard</title>
         <link rel="stylesheet" href="dashboard.css">
         <script src="config.js"></script>
+        <script src="crypto.js"></script>
     </head>
     <body>
         <header class="navbar">
@@ -116,8 +117,8 @@
                 window.location.href = 'index.html';
             });
 
-            // Handle file upload
-           function uploadFile() {
+            // Handle file upload with AES-GCM encryption
+           async function uploadFile() {
                 if (role === 'actor') {
                     alert('Actors are not allowed to upload scripts.');
                     return;
@@ -125,30 +126,34 @@
 
                 const fileInput = document.getElementById('fileInput');
                 const file = fileInput.files[0];
-
                 if (!file) {
                     alert('Please select a file to upload.');
                     return;
                 }
 
-                const url = window.API_CONFIG.API_URL + "/api/upload";
+                const key = await CryptoUtils.loadKey();
+                if (!key) {
+                    alert('Encryption key not found. Please log in again.');
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                const encryptedBlob = await CryptoUtils.encryptFile(file, key);
+                const encryptedFile = new File([encryptedBlob], file.name, { type: 'application/octet-stream' });
 
                 const formData = new FormData();
-                formData.append('file', file);
+                formData.append('file', encryptedFile);
 
-                fetch(url, {
+                fetch(window.API_CONFIG.API_URL + "/api/upload", {
                     method: 'POST',
                     body: formData,
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('File uploaded successfully!');
-                        console.log('Upload response:', data);
-                        listFiles(); // Refresh file list
+                        alert('File uploaded and encrypted successfully!');
+                        listFiles();
                     } else {
                         alert('Upload failed: ' + (data.detail || 'Unknown error'));
                     }
@@ -161,18 +166,13 @@
 
            // List all uploaded files
            function listFiles() {
-                const url = window.API_CONFIG.API_URL + "/api/uploads";
-
-                fetch(url, {
+                fetch(window.API_CONFIG.API_URL + "/api/uploads", {
                     method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 })
                 .then(response => response.json())
                 .then(data => {
                     const fileListDiv = document.getElementById('fileList');
-
                     if (data.success && data.files.length > 0) {
                         let html = '<h4>Uploaded Files (' + data.total + '):</h4><ul>';
                         data.files.forEach(file => {
@@ -181,6 +181,7 @@
                             html += `<li>
                                 <strong>${file.filename}</strong> - ${sizeKB} KB (${uploadedAt})
                                 <button onclick="downloadFile(${file.file_id}, '${file.filename}')" style="margin-left: 10px;">Download</button>
+                                <button onclick="revokeFile(${file.file_id})" style="margin-left: 5px; color: red;">Revoke</button>
                             </li>`;
                         });
                         html += '</ul>';
@@ -195,30 +196,57 @@
                 });
            }
 
-           // Download a file
-           function downloadFile(fileId, filename) {
-                const url = window.API_CONFIG.API_URL + "/api/download/" + fileId;
+           // Download and decrypt a file
+           async function downloadFile(fileId, filename) {
+                const key = await CryptoUtils.loadKey();
+                if (!key) {
+                    alert('Encryption key not found. Please log in again.');
+                    window.location.href = 'index.html';
+                    return;
+                }
 
-                fetch(url, {
+                fetch(window.API_CONFIG.API_URL + "/api/download/" + fileId, {
                     method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 })
                 .then(response => {
                     if (!response.ok) throw new Error('Download failed');
                     return response.blob();
                 })
-                .then(blob => {
+                .then(async blob => {
+                    const decrypted = await CryptoUtils.decryptFile(blob, key);
                     const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
+                    a.href = URL.createObjectURL(new Blob([decrypted]));
                     a.download = filename;
                     a.click();
                     URL.revokeObjectURL(a.href);
                 })
                 .catch(error => {
                     console.error('Error downloading file:', error);
-                    alert('Failed to download file.');
+                    alert('Failed to download or decrypt file.');
+                });
+           }
+
+           // Revoke a file
+           function revokeFile(fileId) {
+                if (!confirm('Are you sure you want to revoke this file? It will no longer be accessible.')) return;
+
+                fetch(window.API_CONFIG.API_URL + "/api/files/" + fileId + "/revoke", {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('File revoked successfully.');
+                        listFiles();
+                    } else {
+                        alert('Revoke failed: ' + (data.detail || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error revoking file:', error);
+                    alert('Failed to revoke file.');
                 });
            }
         </script>

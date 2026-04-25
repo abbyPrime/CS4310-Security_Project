@@ -5,6 +5,7 @@
         <title>CinemaShare Login</title>
         <link rel="stylesheet" href="index.css">
         <script src="config.js"></script>
+        <script src="crypto.js"></script>
     </head>
     <body>
         <div class="container">
@@ -47,9 +48,10 @@
 
                     if (response.ok) {
                         const data = await response.json();
-                        // Store the JWT token
                         localStorage.setItem('access_token', data.access_token);
-                        // Redirect to dashboard
+                        // Derive AES key from password and store for this session
+                        const key = await CryptoUtils.deriveKey(password, username);
+                        await CryptoUtils.storeKey(key);
                         window.location.href = 'dashboard.html';
                     } else {
                         const error = await response.json();

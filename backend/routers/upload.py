@@ -90,6 +90,24 @@ async def list_uploads(
     }
 
 
+@router.put("/files/{file_id}/revoke")
+async def revoke_file(
+    file_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    user_id = int(current_user.get("sub"))
+    db_file = db.query(UploadedFile).filter(
+        UploadedFile.file_id == file_id,
+        UploadedFile.uploaded_by == user_id
+    ).first()
+    if not db_file:
+        raise HTTPException(status_code=404, detail="File not found")
+    db_file.is_revoked = True
+    db.commit()
+    return {"success": True, "message": "File revoked"}
+
+
 @router.get("/download/{file_id}")
 async def download_file(
     file_id: int,
