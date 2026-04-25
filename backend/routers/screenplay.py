@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import List
 from auth import verify_token
 from database import get_db
-from models import UploadedFile, FileLine, LineRolePermission
+from models import UploadedFile, FileLine, LineRolePermission, Role
 
 router = APIRouter()
 security = HTTPBearer()
@@ -27,6 +27,15 @@ class LinePermission(BaseModel):
 
 class PermissionsBody(BaseModel):
     permissions: List[LinePermission]
+
+
+@router.get("/roles")
+def list_roles(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    roles = db.query(Role.role_name).distinct().order_by(Role.role_name).all()
+    return {"roles": [r.role_name for r in roles]}
 
 
 @router.get("/screenplays")

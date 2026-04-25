@@ -269,10 +269,22 @@
            }
 
            // View screenplay lines (filtered by role)
-           const ROLES = ['actor', 'screenwriter', 'director'];
+           let ROLES = [];
            let currentViewFileId = null;
 
+           async function fetchRoles() {
+                if (ROLES.length > 0) return;
+                try {
+                    const r = await fetch(window.API_CONFIG.API_URL + "/api/roles", {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await r.json();
+                    ROLES = data.roles || [];
+                } catch { ROLES = []; }
+           }
+
            async function viewScreenplay(fileId, filename) {
+                await fetchRoles();
                 currentViewFileId = fileId;
                 document.getElementById('viewerTitle').textContent = 'Screenplay: ' + filename;
                 document.getElementById('screenplayViewer').style.display = 'block';

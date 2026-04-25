@@ -10,10 +10,11 @@ from auth import hash_password
 TEST_USERS = [
     {"username": "testuser", "password": "password123", "role": "screenwriter"},
     {"username": "admin",    "password": "admin123",    "role": "producer"},
-    {"username": "demo",     "password": "demo123",     "role": "actor"},
+    {"username": "demo",     "password": "demo123",     "role": "actor_john"},
+    {"username": "actor2",   "password": "actor2pass",  "role": "actor_mary"},
 ]
 
-ROLE_NAMES = ["screenwriter", "producer", "actor", "director"]
+ROLE_NAMES = ["screenwriter", "producer", "director", "actor_john", "actor_mary"]
 
 
 def create_test_users():
