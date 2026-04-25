@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from models import User, UserProduction, Production
+from models import User, UserProduction, Production, UserRole, Role
 from schemas import LoginRequest, LoginResponse
 from auth import verify_password, create_access_token
 
@@ -33,10 +33,19 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
         .all()
     )
 
-    # Generate JWT token including production ids
+    # Get user's role
+    user_role = (
+        db.query(Role)
+        .join(UserRole, UserRole.role_id == Role.role_id)
+        .filter(UserRole.user_id == user.user_id)
+        .first()
+    )
+    role_name = user_role.role_name if user_role else "viewer"
+
+    # Generate JWT token including production ids and role
     production_ids = [p.production_id for p in productions]
     token = create_access_token(
-        data={"sub": str(user.user_id), "productions": production_ids}
+        data={"sub": str(user.user_id), "productions": production_ids, "role": role_name}
     )
 
     return LoginResponse(access_token=token)

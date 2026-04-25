@@ -64,8 +64,12 @@
                 window.location.href = 'index.html';
             }
 
-            // Track User Role
-            const role = localStorage.getItem('role') || 'screenwriter'; // Placeholder for RBAC implementation
+            // Decode role from JWT
+            function getRoleFromToken(t) {
+                try { return JSON.parse(atob(t.split('.')[1])).role || 'viewer'; }
+                catch { return 'viewer'; }
+            }
+            const role = getRoleFromToken(token);
 
             function applyRBAC() {
                 const uploadCard = document.querySelector('.card');
