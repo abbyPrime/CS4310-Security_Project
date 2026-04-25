@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import login, register, upload
+from routers import login, register, upload, screenplay
 from database import engine
 from sqlalchemy import text
 import os
@@ -22,6 +22,23 @@ def create_tables():
                 uploaded_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 is_revoked      BOOLEAN DEFAULT FALSE,
                 FOREIGN KEY (uploaded_by) REFERENCES users(user_id)
+            )
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS file_lines (
+                line_id     SERIAL PRIMARY KEY,
+                file_id     INT NOT NULL,
+                line_number INT NOT NULL,
+                content     TEXT NOT NULL,
+                FOREIGN KEY (file_id) REFERENCES uploaded_files(file_id)
+            )
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS line_role_permissions (
+                line_id     INT NOT NULL,
+                role_name   VARCHAR(100) NOT NULL,
+                PRIMARY KEY (line_id, role_name),
+                FOREIGN KEY (line_id) REFERENCES file_lines(line_id)
             )
         """))
         conn.commit()
@@ -55,3 +72,4 @@ async def health_check():
 app.include_router(login.router, prefix="/api")
 app.include_router(register.router, prefix="/api")
 app.include_router(upload.router, prefix="/api")
+app.include_router(screenplay.router, prefix="/api")

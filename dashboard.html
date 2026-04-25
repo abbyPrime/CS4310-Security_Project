@@ -35,6 +35,19 @@
                 </div>
 
                 <div id="fileList" style="margin-top: 20px;"></div>
+
+                <div class="card" id="screenplayUploadCard">
+                    <h3>Upload Screenplay (.txt, line-based)</h3>
+                    <input type="file" id="screenplayInput" accept=".txt" />
+                    <button onclick="uploadScreenplay()">Upload Screenplay</button>
+                </div>
+
+                <div id="screenplayViewer" style="display:none; margin-top:20px; border-top:2px solid #ccc; padding-top:15px;">
+                    <h4 id="viewerTitle"></h4>
+                    <button onclick="closeViewer()">Close</button>
+                    <div id="viewerLines" style="font-family:monospace; margin-top:10px; max-height:500px; overflow-y:auto;"></div>
+                    <button id="savePermBtn" style="display:none; margin-top:10px;" onclick="savePermissions()">Save Permissions</button>
+                </div>
             </div>
 
         <script>
@@ -175,6 +188,7 @@
                             html += `<li>
                                 <strong>${file.filename}</strong> - ${sizeKB} KB (${uploadedAt})
                                 <button onclick="downloadFile(${file.file_id}, '${file.filename}')" style="margin-left: 10px;">Download</button>
+                                <button onclick="viewScreenplay(${file.file_id}, '${file.filename}')" style="margin-left: 5px;">View</button>
                                 <button onclick="revokeFile(${file.file_id})" style="margin-left: 5px; color: red;">Revoke</button>
                             </li>`;
                         });
@@ -219,6 +233,146 @@
                     console.error('Error downloading file:', error);
                     alert('Failed to download or decrypt file.');
                 });
+           }
+
+           // Upload screenplay (line-based, no encryption)
+           async function uploadScreenplay() {
+                const fileInput = document.getElementById('screenplayInput');
+                const file = fileInput.files[0];
+                if (!file) { alert('Please select a .txt file.'); return; }
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                fetch(window.API_CONFIG.API_URL + "/api/upload-screenplay", {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Screenplay uploaded! ${data.line_count} lines stored.`);
+                        listFiles();
+                    } else {
+                        alert('Upload failed: ' + (data.detail || 'Unknown error'));
+                    }
+                })
+                .catch(() => alert('Failed to upload screenplay.'));
+           }
+
+           // View screenplay lines (filtered by role)
+           const ROLES = ['actor', 'screenwriter', 'director'];
+           let currentViewFileId = null;
+
+           async function viewScreenplay(fileId, filename) {
+                currentViewFileId = fileId;
+                document.getElementById('viewerTitle').textContent = 'Screenplay: ' + filename;
+                document.getElementById('screenplayViewer').style.display = 'block';
+                document.getElementById('savePermBtn').style.display = role === 'producer' ? 'inline-block' : 'none';
+                document.getElementById('viewerLines').innerHTML = 'Loading...';
+
+                fetch(window.API_CONFIG.API_URL + "/api/files/" + fileId + "/view", {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) { document.getElementById('viewerLines').innerHTML = '<p>Not a screenplay file.</p>'; return; }
+
+                    if (role === 'producer') {
+                        // Table layout with column-select headers
+                        let html = `<table style="width:100%; border-collapse:collapse; font-family:monospace; font-size:0.9em;">
+                            <thead>
+                                <tr style="background:#333; color:#fff; position:sticky; top:0;">
+                                    <th style="width:40px; padding:6px;">#</th>
+                                    <th style="text-align:left; padding:6px;">Content</th>
+                                    ${ROLES.map(r => `
+                                    <th style="width:100px; padding:6px; text-align:center;">
+                                        ${r}<br>
+                                        <label style="font-size:0.8em; font-weight:normal; cursor:pointer;">
+                                            <input type="checkbox" id="selectAll_${r}" onchange="toggleAllRole('${r}', this.checked)" checked>
+                                            all
+                                        </label>
+                                    </th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                        data.lines.forEach((line, i) => {
+                            const checked = (r) => line.allowed_roles.length === 0 || line.allowed_roles.includes(r);
+                            const bg = i % 2 === 0 ? '#f5f5f5' : '#ffffff';
+                            html += `<tr style="background:${bg}; color:#111;">
+                                <td style="padding:4px 6px; color:#888; text-align:center;">${line.line_number}</td>
+                                <td style="padding:4px 6px;">${line.content || '&nbsp;'}</td>
+                                ${ROLES.map(r => `
+                                <td style="text-align:center; padding:4px;">
+                                    <input type="checkbox" class="perm-check" data-line="${line.line_id}" data-role="${r}" ${checked(r) ? 'checked' : ''}>
+                                </td>`).join('')}
+                            </tr>`;
+                        });
+
+                        html += '</tbody></table>';
+                        document.getElementById('viewerLines').innerHTML = html;
+
+                        // Sync "all" header checkboxes on initial render
+                        ROLES.forEach(r => syncHeaderCheck(r));
+                    } else {
+                        // Non-producer: plain view with [REDACTED]
+                        let html = '<table style="width:100%; border-collapse:collapse; font-family:monospace; font-size:0.9em;">';
+                        data.lines.forEach((line, i) => {
+                            const bg = !line.visible ? '#ffe0e0' : (i % 2 === 0 ? '#f5f5f5' : '#ffffff');
+                            const color = !line.visible ? '#999' : '#111';
+                            html += `<tr style="background:${bg}; color:${color};">
+                                <td style="padding:4px 6px; color:#888; width:40px; text-align:center;">${line.line_number}</td>
+                                <td style="padding:4px 6px;">${line.content}</td>
+                            </tr>`;
+                        });
+                        html += '</table>';
+                        document.getElementById('viewerLines').innerHTML = html;
+                    }
+                })
+                .catch(() => { document.getElementById('viewerLines').innerHTML = '<p style="color:red;">Failed to load screenplay.</p>'; });
+           }
+
+           function toggleAllRole(roleName, checked) {
+                document.querySelectorAll(`.perm-check[data-role="${roleName}"]`)
+                    .forEach(cb => cb.checked = checked);
+           }
+
+           function syncHeaderCheck(roleName) {
+                const all = [...document.querySelectorAll(`.perm-check[data-role="${roleName}"]`)];
+                const header = document.getElementById(`selectAll_${roleName}`);
+                if (header) header.checked = all.every(cb => cb.checked);
+           }
+
+           async function savePermissions() {
+                const checks = document.querySelectorAll('.perm-check');
+                const linePerms = {};
+                checks.forEach(cb => {
+                    const lid = cb.dataset.line;
+                    if (!linePerms[lid]) linePerms[lid] = [];
+                    if (cb.checked) linePerms[lid].push(cb.dataset.role);
+                });
+                const permissions = Object.entries(linePerms).map(([line_id, roles]) => ({
+                    line_id: parseInt(line_id), roles
+                }));
+
+                fetch(window.API_CONFIG.API_URL + "/api/files/" + currentViewFileId + "/permissions", {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ permissions })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) alert('Permissions saved!');
+                    else alert('Failed: ' + (data.detail || 'Unknown'));
+                })
+                .catch(() => alert('Failed to save permissions.'));
+           }
+
+           function closeViewer() {
+                document.getElementById('screenplayViewer').style.display = 'none';
+                currentViewFileId = null;
            }
 
            // Revoke a file
