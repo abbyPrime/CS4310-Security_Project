@@ -1,226 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>CinemaShare Dashboard</title>
-        <link rel="stylesheet" href="dashboard.css">
-        <script src="config.js"></script>
-    </head>
-    <body>
-        <header class="navbar">
-            <h1 class="logo">CinemaShare</h1>
-            
-            <div class="profile-menu">
-                <button class="profile-button">👤</button>
-
-                <div class="dropdown">
-                    <a href="#">Profile</a>
-                    <a href="#">Settings</a>
-                    <a href="index.html">Logout</a>
-                </div>
+<head>
+    <meta charset="UTF-8">
+    <title>CinemaShare Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <script src="config.js"></script>
+</head>
+<body>
+    <header class="navbar">
+        <h1 class="logo">CinemaShare</h1>
+        
+        <div class="profile-menu">
+            <button class="profile-button">👤</button>
+            <div class="dropdown">
+                <a href="#">Profile</a>
+                <a href="#">Settings</a>
+                <a href="index.html">Logout</a>
             </div>
-        </header>
+        </div>
+    </header>
 
-            <div class="container">
-                <h2>Dashboard</h2>
-                <p>Welcome to your CinemaShare dashboard!</p>
-                <p id="roleDisplay"></p>
+    <div class="container">
+        <h2>Dashboard</h2>
+        <p>Welcome to your CinemaShare dashboard!</p>
+        <p id="roleDisplay"></p>
 
-                <div class="card">
-                    <h3>File Upload</h3>
-                    <input type="file" id="fileInput" />
-                    <button onclick="uploadFile()">Upload Screenplay</button>
-                    <button onclick="listFiles()">View Uploaded Files</button>
-                </div>
-                // Remove when Backend is ready.
-                <div class="file-row" onclick="openFile('script.pdf')">
-                    <span class="file-name">script.pdf</span>
-                    <span class="file-meta">200KB</span>
-                </div>
-                // Remove when Backend is ready.
-                <div class="file-row" onclick="openFile('script2.pdf')">
-                    <span class="file-name">script2.pdf</span>
-                    <span class="file-meta">140KB</span>
-                </div>
+        <div class="card">
+            <h3>File Upload</h3>
+            <input type="file" id="fileInput" />
+            <button onclick="uploadFile()">Upload Screenplay</button>
+            <button onclick="listFiles()">View Uploaded Files</button>
+        </div>
 
-                <div id="fileList" style="margin-top: 20px;"></div>
-            </div>
+        <div id="fileList" style="margin-top: 20px;"></div>
+    </div>
 
-        <script>
-            // Check if user is authenticated
-            let token = localStorage.getItem('access_token');
+<script>
+let token = localStorage.getItem('access_token');
 
-            if (!token && window.location.protocol === 'file:') {
-                console.warn("DEV MODE: Allowing local access");
-                token = "dev-token";
+if (!token && window.location.protocol === 'file:') {
+    console.warn("DEV MODE: Allowing local access");
+    token = "dev-token";
+    localStorage.setItem('access_token', token);
+    localStorage.setItem('role', 'producer');
+}
 
-                localStorage.setItem('access_token', token);
-                localStorage.setItem('role', 'producer');
-            }
+if (!token) {
+    window.location.href = 'index.html';
+}
 
-            if (!token) {
-                //Redirect to login if no token found
-                window.location.href = 'index.html';
-            }
+const role = localStorage.getItem('role') || 'screenwriter';
 
-            // Track User Role
-            const role = localStorage.getItem('role') || 'screenwriter'; // Placeholder for RBAC implementation
+function applyRBAC() {
+    const uploadCard = document.querySelector('.card');
+    const fileUploadTitle = uploadCard.querySelector('h3');
 
-            function applyRBAC() {
-                const uploadCard = document.querySelector('.card');
-                const fileUploadTitle = uploadCard.querySelector('h3');
+    if (role === 'actor') {
+        uploadCard.style.display = 'none';
+    }
 
-                // Actors will NOT be allowed to upload files
-                if (role === 'actor') {
-                    uploadCard.style.display = 'none';
-                }
+    if (role === 'producer') {
+        fileUploadTitle.textContent = 'Manage Scripts';
+    }
 
-                if (role === 'producer') {
-                    fileUploadTitle.textContent = 'Manage Scripts';
-                }
+    if (role === 'screenwriter') {
+        fileUploadTitle.textContent = 'Upload Script';
+    }
+}
 
-                if (role === 'screenwriter') {
-                    fileUploadTitle.textContent = 'Upload Script';
-                }
-            }
+window.addEventListener('DOMContentLoaded', () => {
+    applyRBAC();
+    document.getElementById('roleDisplay').textContent = `Role: ${role}`;
+});
 
-        window.addEventListener('DOMContentLoaded', () => {
-            applyRBAC();
-            document.getElementById('roleDisplay').textContent = `Role ${role}`;
+// Dropdown menu
+const profileButton = document.querySelector('.profile-button');
+const dropdown = document.querySelector('.dropdown');
+
+profileButton.addEventListener('click', () => {
+    dropdown.classList.toggle('show');
+});
+
+window.addEventListener('click', (event) => {
+    if (!event.target.matches('.profile-button')) {
+        dropdown.classList.remove('show');
+    }
+});
+
+// Logout
+document.querySelector('.dropdown a[href="index.html"]').addEventListener('click', (e) => {
+    e.preventDefault();
+    localStorage.removeItem('access_token');
+    window.location.href = 'index.html';
+});
+
+// Upload file (unchanged)
+function uploadFile() {
+    if (role === 'actor') {
+        alert('Actors are not allowed to upload scripts.');
+        return;
+    }
+
+    const file = document.getElementById('fileInput').files[0];
+    if (!file) {
+        alert('Select a file.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fetch(window.API_CONFIG.API_URL + "/api/upload", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    })
+    .then(res => res.json())
+    .then(() => listFiles());
+}
+
+// List files (UPDATED to use screenplay_id)
+function listFiles() {
+    fetch(window.API_CONFIG.API_URL + "/api/uploads", {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        const div = document.getElementById('fileList');
+
+        if (!data.success || data.files.length === 0) {
+            div.innerHTML = "<p>No files uploaded.</p>";
+            return;
+        }
+
+        let html = "<h4>Screenplays:</h4><ul>";
+
+        data.files.forEach(file => {
+            html += `
+                <li>
+                    <strong>${file.filename}</strong>
+                    <button onclick="downloadFiltered(${file.file_id}, '${file.filename}')">
+                        Download
+                    </button>
+                </li>
+            `;
         });
 
-            // Dropdown menu functionality
-            const profileButton = document.querySelector('.profile-button');
-            const dropdown = document.querySelector('.dropdown');
+        html += "</ul>";
+        div.innerHTML = html;
+    });
+}
 
-            profileButton.addEventListener('click', () => {
-                dropdown.classList.toggle('show');
-            });
-
-            // Close the dropdown if the user clicks outside of it
-            window.addEventListener('click', (event) => {
-                if (!event.target.matches('.profile-button') && !event.target.matches('.profile-icon')) {
-                    if (dropdown.classList.contains('show')) {
-                        dropdown.classList.remove('show');
-                    }
-                }
-            });
-
-            // Handle logout
-            const logoutLink = document.querySelector('.dropdown a[href="index.html"]');
-            logoutLink.addEventListener('click', (event) => {
-                event.preventDefault();
-                // Clear the token
-                localStorage.removeItem('access_token');
-                // Redirect to login
-                window.location.href = 'index.html';
-            });
-
-            // Handle file upload
-           function uploadFile() {
-                if (role === 'actor') {
-                    alert('Actors are not allowed to upload scripts.');
-                    return;
-                }
-
-                const fileInput = document.getElementById('fileInput');
-                const file = fileInput.files[0];
-
-                if (!file) {
-                    alert('Please select a file to upload.');
-                    return;
-                }
-
-                const url = window.API_CONFIG.API_URL + "/api/upload";
-
-                const formData = new FormData();
-                formData.append('file', file);
-
-                fetch(url, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('File uploaded successfully!');
-                        console.log('Upload response:', data);
-                        listFiles(); // Refresh file list
-                    } else {
-                        alert('Upload failed: ' + (data.detail || 'Unknown error'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error uploading file:', error);
-                    alert('Failed to upload file.');
-                });
-           }
-
-           // List all uploaded files
-           function listFiles() {
-                const url = window.API_CONFIG.API_URL + "/api/uploads";
-
-                fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    const fileListDiv = document.getElementById('fileList');
-
-                    if (data.success && data.files.length > 0) {
-                        let html = '<h4>Uploaded Files (' + data.total + '):</h4><ul>';
-                        data.files.forEach(file => {
-                            const sizeKB = (file.size / 1024).toFixed(2);
-                            const uploadedAt = file.uploaded_at ? new Date(file.uploaded_at).toLocaleString() : '';
-                            html += `<li>
-                                <strong>${file.filename}</strong> - ${sizeKB} KB (${uploadedAt})
-                                <button onclick="downloadFile(${file.file_id}, '${file.filename}')" style="margin-left: 10px;">Download</button>
-                            </li>`;
-                        });
-                        html += '</ul>';
-                        fileListDiv.innerHTML = html;
-                    } else {
-                        fileListDiv.innerHTML = '<p>No files uploaded yet.</p>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error listing files:', error);
-                    document.getElementById('fileList').innerHTML = '<p style="color: red;">Failed to load files.</p>';
-                });
-           }
-
-           // Download a file
-           function downloadFile(fileId, filename) {
-                const url = window.API_CONFIG.API_URL + "/api/download/" + fileId;
-
-                fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error('Download failed');
-                    return response.blob();
-                })
-                .then(blob => {
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = filename;
-                    a.click();
-                    URL.revokeObjectURL(a.href);
-                })
-                .catch(error => {
-                    console.error('Error downloading file:', error);
-                    alert('Failed to download file.');
-                });
-           }
-        </script>
-    </body>
+// Download filtered (censored) screenplay
+function downloadFiltered(screenplayId, filename) {
+    const url = `${window.API_CONFIG.API_URL}/api/download_filtered/${screenplayId}`;
+	console.log(screenplayId);
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error("Download failed");
+        return response.blob();
+    })
+    .then(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = "filtered_" + filename.replace('.pdf', '.txt');
+        a.click();
+        URL.revokeObjectURL(a.href);
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Failed to download filtered script.");
+    });
+}
+</script>
+</body>
 </html>
