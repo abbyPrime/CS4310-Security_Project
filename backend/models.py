@@ -69,5 +69,25 @@ class UploadedFile(Base):
     uploader = relationship("User")
 
 
+class FileLine(Base):
+    __tablename__ = "file_lines"
+
+    line_id = Column(Integer, primary_key=True, index=True)
+    file_id = Column(Integer, ForeignKey("uploaded_files.file_id"), nullable=False)
+    line_number = Column(Integer, nullable=False)
+    content = Column(String, nullable=False)
+
+    permissions = relationship("LineRolePermission", back_populates="line", cascade="all, delete-orphan")
+
+
+class LineRolePermission(Base):
+    __tablename__ = "line_role_permissions"
+
+    line_id = Column(Integer, ForeignKey("file_lines.line_id"), primary_key=True)
+    role_name = Column(String(100), primary_key=True)
+
+    line = relationship("FileLine", back_populates="permissions")
+
+
 
 
